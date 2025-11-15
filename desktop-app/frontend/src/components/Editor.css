@@ -16,21 +16,68 @@
 
 .editor-content {
   flex-grow: 1;
+  position: relative;
 }
 
-.editor-content textarea, .editor-content pre {
-  width: 100%;
+.note-editor-grid {
+  display: grid;
   height: 100%;
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary);
+  width: 100%;
+}
+
+.editor-display {
+  grid-area: 1 / 1;
   font-family: var(--font-mono);
   font-size: 15px;
   line-height: 1.6;
-  resize: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 0;
+  margin: 0;
   box-sizing: border-box;
+  border: none;
+  background: transparent;
+  overflow-y: auto;
+  outline: none;
 }
 
-.editor-content textarea:focus {
-  outline: none;
+/* Editor lines */
+.editor-line {
+  position: relative;
+  min-height: 1.6em;
+}
+.inline-placeholder {
+  color: var(--color-text-secondary);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.editor-line.p {
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1.6;
+  margin-bottom: 0.3em;
+}
+
+
+/* Headings */
+.editor-line.h1 {
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.5em;
+}
+
+.editor-line.h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.4em;
+}
+
+.editor-line.h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 0.3em;
 }
