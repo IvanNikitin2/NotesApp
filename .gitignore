@@ -1,0 +1,97 @@
+# ---------------------------
+# Node.js / Frontend
+# ---------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+.cache/
+.vite/
+*.local
+
+# ---------------------------
+# Tauri / Rust
+# ---------------------------
+desktop-app/src-tauri/target/
+desktop-app/src-tauri/Cargo.lock
+*.pdb
+*.exe
+*.dll
+
+# MacOS Tauri bundle output
+*.app
+*.dmg
+
+# ---------------------------
+# Python / FastAPI
+# ---------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.env
+.venv/
+venv/
+.env.*
+*.sqlite3
+
+# ---------------------------
+# React Native (CLI)
+# ---------------------------
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+ios/*.xcuserdata
+ios/DerivedData/
+ios/Podfile.lock
+
+# Android
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/captures/
+
+# Metro bundler
+.expo/
+.expo-shared/
+.gradle/
+.watchmanconfig
+*.keystore
+
+# ---------------------------
+# macOS / System Files
+# ---------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# ---------------------------
+# Logs / Temp
+# ---------------------------
+*.log
+*.tmp
+temp/
+tmp/
+
+# ---------------------------
+# Editor settings
+# ---------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------------
+# Misc
+# ---------------------------
+*.bak
+*.orig
+*.lock
