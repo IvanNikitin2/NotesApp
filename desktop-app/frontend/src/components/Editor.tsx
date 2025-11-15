@@ -4,9 +4,9 @@ import CommandDropdown, { Command } from './CommandDropdown';
 import './Editor.css';
 
 const COMMANDS: Command[] = [
-  { label: 'Heading 1', markdown: '#', description: 'Large section heading' },
-  { label: 'Heading 2', markdown: '##', description: 'Medium section heading' },
-  { label: 'Heading 3', markdown: '###', description: 'Small section heading' },
+  { label: 'Heading 1', markdown: '#' },
+  { label: 'Heading 2', markdown: '##' },
+  { label: 'Heading 3', markdown: '###' },
 ];
 
 const getLineClass = (line: string): string => {
@@ -25,6 +25,7 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState(`This is the content for ${file.name}.`);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [isCommandMenuMounted, setCommandMenuMounted] = useState(false);
   const [commandLineIndex, setCommandLineIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,16 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
     setShowCommandMenu(false);
     setCommandLineIndex(null);
   }, [file]);
+
+  useEffect(() => {
+    if (showCommandMenu) {
+      setCommandMenuMounted(true);
+    } else {
+      // Allow fade-out animation to complete before unmounting
+      const timer = setTimeout(() => setCommandMenuMounted(false), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [showCommandMenu]);
 
   const getCaretLineIndex = (): number | null => {
     const sel = window.getSelection();
@@ -46,25 +57,25 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
     return Array.from(editorRef.current.children).indexOf(node as Element);
   };
 
-const applyCommand = (command: Command) => {
-  const lineIndex = commandLineIndex ?? getCaretLineIndex();
-  if (lineIndex === null || !editorRef.current) return;
+  const applyCommand = (command: Command) => {
+    const lineIndex = commandLineIndex ?? getCaretLineIndex();
+    if (lineIndex === null || !editorRef.current) return;
 
-  const lineDiv = editorRef.current.children[lineIndex] as HTMLDivElement;
+    const lineDiv = editorRef.current.children[lineIndex] as HTMLDivElement;
 
-  lineDiv.className = `editor-line ${getLineClass(command.markdown + ' ')}`;
-  lineDiv.innerText = ''; // or keep existing text
+    lineDiv.className = `editor-line ${getLineClass(command.markdown + ' ')}`;
+    lineDiv.innerText = ''; // or keep existing text
 
-  setShowCommandMenu(false);
+    setShowCommandMenu(false);
 
-  // Move caret to end
-  const range = document.createRange();
-  const sel = window.getSelection();
-  range.selectNodeContents(lineDiv);
-  range.collapse(false);
-  sel?.removeAllRanges();
-  sel?.addRange(range);
-};
+    // Move caret to end
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(lineDiv);
+    range.collapse(false);
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+  };
 
   const handleInput = () => {
     if (!editorRef.current) return;
@@ -91,27 +102,27 @@ const applyCommand = (command: Command) => {
     }
   };
 
-const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-  if (e.key !== 'Enter') return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Enter') return;
 
-  const sel = window.getSelection();
-  if (!sel || !editorRef.current) return;
+    const sel = window.getSelection();
+    if (!sel || !editorRef.current) return;
 
-  const lineDiv = sel.anchorNode?.parentElement as HTMLDivElement;
-  if (!lineDiv) return;
+    const lineDiv = sel.anchorNode?.parentElement as HTMLDivElement;
+    if (!lineDiv) return;
 
-  // Only act if current line is a heading
-  if (lineDiv.classList.contains('h1') || lineDiv.classList.contains('h2') || lineDiv.classList.contains('h3')) {
-    // Let browser insert new line naturally
-    setTimeout(() => {
-      // Get the new line (usually the next sibling)
-      const nextLine = lineDiv.nextElementSibling as HTMLDivElement;
-      if (nextLine) {
-        nextLine.className = 'editor-line p'; // reset to default paragraph
-      }
-    }, 0);
-  }
-};
+    // Only act if current line is a heading
+    if (lineDiv.classList.contains('h1') || lineDiv.classList.contains('h2') || lineDiv.classList.contains('h3')) {
+      // Let browser insert new line naturally
+      setTimeout(() => {
+        // Get the new line (usually the next sibling)
+        const nextLine = lineDiv.nextElementSibling as HTMLDivElement;
+        if (nextLine) {
+          nextLine.className = 'editor-line p'; // reset to default paragraph
+        }
+      }, 0);
+    }
+  };
 
   const getCaretYPosition = (container: HTMLElement | null): number => {
     if (!container) return 0;
@@ -139,19 +150,17 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
       <div className="editor-content">
         {isNoteFile ? (
           <div className="note-editor-grid" style={{ position: 'relative' }}>
-<div
-  className="editor-display"
-  ref={editorRef}
-  contentEditable
-  spellCheck={false}
-  onInput={handleInput}
-  onKeyDown={handleKeyDown}
-  suppressContentEditableWarning
->
-</div>
+            <div
+              className="editor-display"
+              ref={editorRef}
+              contentEditable
+              spellCheck={false}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              suppressContentEditableWarning
+            ></div>
 
-
-            {showCommandMenu && commandLineIndex !== null && (
+            {isCommandMenuMounted && commandLineIndex !== null && (
               <div
                 style={{
                   position: 'absolute',
@@ -160,8 +169,11 @@ const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
                   zIndex: 100,
                 }}
               >
-                <CommandDropdown commands={COMMANDS} onSelect={applyCommand} placeholder="Choose or write command"
-/>
+                <CommandDropdown 
+                  commands={COMMANDS} 
+                  onSelect={applyCommand}
+                  isVisible={showCommandMenu}
+                />
               </div>
             )}
           </div>
