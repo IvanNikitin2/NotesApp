@@ -1,4 +1,86 @@
-/* Header inside sidebar for home button */
+/* --- Container and Resizing --- */
+
+body.resizing {
+  user-select: none;
+  cursor: col-resize;
+}
+
+.sidebar-container {
+  background-color: var(--color-bg);
+  padding: 15px;
+  padding-top: 60px;
+  box-sizing: border-box;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 15;
+}
+
+.resizer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background-color: #58626e;
+  opacity: 0;
+  box-shadow: 0 0 10px 1px rgba(88, 98, 110, 0.6);
+  transition: opacity 0.2s ease-in-out;
+}
+
+.resizer:hover::before,
+body.resizing .resizer::before {
+  opacity: 1;
+}
+
+
+/* --- Sidebar Content --- */
+
+.sidebar-toggle {
+  position: absolute;
+  top: 15px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.1s ease, background-color 0.2s;
+}
+
+/* This is the fix: disable the 'left' transition during a drag */
+body.resizing .sidebar-toggle {
+  transition: transform 0.1s ease, background-color 0.2s;
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.sidebar-toggle:active {
+  transform: scale(0.9);
+}
+
 .sidebar-header {
   margin-bottom: 15px;
 }
@@ -22,7 +104,6 @@
   border-color: var(--color-border);
 }
 
-/* File Tree Styles */
 .file-tree {
   flex-grow: 1;
 }
