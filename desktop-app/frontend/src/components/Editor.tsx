@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FileNode } from './Sidebar';
 import CommandDropdown, { Command } from './CommandDropdown';
 import './Editor.css';
@@ -24,9 +24,12 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
   const isNoteFile = file.name.endsWith('.note');
   const editorRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState(`This is the content for ${file.name}.`);
+  
+  // --- Command Menu State ---
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [isCommandMenuMounted, setCommandMenuMounted] = useState(false);
   const [commandLineIndex, setCommandLineIndex] = useState<number | null>(null);
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
 
   useEffect(() => {
     setContent(`This is the content for ${file.name}.`);
@@ -38,8 +41,9 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
     if (showCommandMenu) {
       setCommandMenuMounted(true);
     } else {
-      // Allow fade-out animation to complete before unmounting
-      const timer = setTimeout(() => setCommandMenuMounted(false), 200);
+      const timer = setTimeout(() => {
+        setCommandMenuMounted(false);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [showCommandMenu]);
@@ -57,30 +61,30 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
     return Array.from(editorRef.current.children).indexOf(node as Element);
   };
 
-  const applyCommand = (command: Command) => {
+  const applyCommand = useCallback((command: Command) => {
     const lineIndex = commandLineIndex ?? getCaretLineIndex();
     if (lineIndex === null || !editorRef.current) return;
 
     const lineDiv = editorRef.current.children[lineIndex] as HTMLDivElement;
-
     lineDiv.className = `editor-line ${getLineClass(command.markdown + ' ')}`;
-    lineDiv.innerText = ''; // or keep existing text
+    // Replace the entire line content, including the trigger `/`
+    lineDiv.innerText = ''; 
 
     setShowCommandMenu(false);
 
-    // Move caret to end
+    // Move caret to end and focus the line
     const range = document.createRange();
     const sel = window.getSelection();
     range.selectNodeContents(lineDiv);
     range.collapse(false);
     sel?.removeAllRanges();
     sel?.addRange(range);
-  };
+    lineDiv.focus();
+  }, [commandLineIndex]);
 
   const handleInput = () => {
     if (!editorRef.current) return;
 
-    // Update content
     const newContent = Array.from(editorRef.current.children)
       .map((c) => (c as HTMLDivElement).innerText)
       .join('\n');
@@ -93,34 +97,57 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
     }
 
     const lineText = (editorRef.current.children[lineIndex] as HTMLDivElement).innerText;
-    if (lineText.endsWith('/')) {
+    // Show menu if line contains '/' - can be expanded for filtering
+    if (lineText.includes('/')) {
       setShowCommandMenu(true);
       setCommandLineIndex(lineIndex);
+      setSelectedCommandIndex(0);
     } else {
       setShowCommandMenu(false);
-      setCommandLineIndex(null);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Enter') return;
+    if (showCommandMenu) {
+      // These keys are for navigation only and should not affect the editor
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter' || e.key === 'Escape') {
+        e.preventDefault();
+      }
 
-    const sel = window.getSelection();
-    if (!sel || !editorRef.current) return;
+      if (e.key === 'ArrowUp') {
+        setSelectedCommandIndex((prev) => (prev === 0 ? COMMANDS.length - 1 : prev - 1));
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        setSelectedCommandIndex((prev) => (prev === COMMANDS.length - 1 ? 0 : prev + 1));
+        return;
+      }
+      if (e.key === 'Enter') {
+        applyCommand(COMMANDS[selectedCommandIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowCommandMenu(false);
+        return;
+      }
+      // All other keys will be handled by the editor by default
+    }
+    
+    // Default behavior for 'Enter' on headings (only if menu is closed)
+    if (e.key === 'Enter') {
+      const sel = window.getSelection();
+      if (!sel || !editorRef.current) return;
+      const lineDiv = sel.anchorNode?.parentElement as HTMLDivElement;
+      if (!lineDiv) return;
 
-    const lineDiv = sel.anchorNode?.parentElement as HTMLDivElement;
-    if (!lineDiv) return;
-
-    // Only act if current line is a heading
-    if (lineDiv.classList.contains('h1') || lineDiv.classList.contains('h2') || lineDiv.classList.contains('h3')) {
-      // Let browser insert new line naturally
-      setTimeout(() => {
-        // Get the new line (usually the next sibling)
-        const nextLine = lineDiv.nextElementSibling as HTMLDivElement;
-        if (nextLine) {
-          nextLine.className = 'editor-line p'; // reset to default paragraph
-        }
-      }, 0);
+      if (lineDiv.classList.contains('h1') || lineDiv.classList.contains('h2') || lineDiv.classList.contains('h3')) {
+        setTimeout(() => {
+          const nextLine = lineDiv.nextElementSibling as HTMLDivElement;
+          if (nextLine) {
+            nextLine.className = 'editor-line p';
+          }
+        }, 0);
+      }
     }
   };
 
@@ -173,6 +200,7 @@ const Editor: React.FC<EditorProps> = ({ file }) => {
                   commands={COMMANDS} 
                   onSelect={applyCommand}
                   isVisible={showCommandMenu}
+                  selectedIndex={selectedCommandIndex}
                 />
               </div>
             )}

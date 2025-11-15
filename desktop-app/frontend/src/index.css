@@ -8,10 +8,10 @@
   --color-text-primary: #e6edf3;    /* Main text, headings */
   --color-text-secondary: #8d96a0; /* Secondary text, placeholders */
   --color-text-accent: #58a6ff;   /* Accent color for links, highlights */
+  --color-black: rgb(29, 29, 29);
 
   --color-button-primary-bg: #238636;
   --color-button-primary-hover-bg: #2ea043;
-  
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --font-mono: 'SF Mono', 'Menlo', 'monospace';
   
