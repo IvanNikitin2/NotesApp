@@ -1,11 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Command } from '../lib/commands';
 import './CommandDropdown.css';
-
-export interface Command {
-  label: string;
-  markdown: string;
-  description?: string;
-}
 
 interface CommandDropdownProps {
   commands: Command[];
@@ -27,7 +22,6 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ commands, onSelect, i
     }
   }, [isVisible]);
 
-  // Scroll the selected item into view
   useEffect(() => {
     if (isVisible && listRef.current) {
       const selectedItem = listRef.current.children[selectedIndex] as HTMLLIElement;
@@ -45,7 +39,7 @@ const CommandDropdown: React.FC<CommandDropdownProps> = ({ commands, onSelect, i
       <ul ref={listRef}>
         {commands.map((command, index) => (
           <li
-            key={command.label}
+            key={command.id}
             className={index === selectedIndex ? 'active' : ''}
             onMouseDown={(e) => {
               e.preventDefault();

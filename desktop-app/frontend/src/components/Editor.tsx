@@ -1,214 +1,112 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { FileNode } from './Sidebar';
-import CommandDropdown, { Command } from './CommandDropdown';
+import { Command, COMMANDS } from '../lib/commands';
+import CommandDropdown from './CommandDropdown';
 import './Editor.css';
+import './EditorCommands.css';
 
-const COMMANDS: Command[] = [
-  { label: 'Heading 1', markdown: '#' },
-  { label: 'Heading 2', markdown: '##' },
-  { label: 'Heading 3', markdown: '###' },
-];
-
-const getLineClass = (line: string): string => {
-  if (line.startsWith('# ')) return 'h1';
-  if (line.startsWith('## ')) return 'h2';
-  if (line.startsWith('### ')) return 'h3';
-  return 'p';
-};
-
-interface EditorProps {
-  file: FileNode;
-}
-
-const Editor: React.FC<EditorProps> = ({ file }) => {
-  const isNoteFile = file.name.endsWith('.note');
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [content, setContent] = useState(`This is the content for ${file.name}.`);
-  
-  // --- Command Menu State ---
+const Editor: React.FC<{ file: FileNode }> = ({ file }) => {
+  const [content, setContent] = useState(`# ${file.name}\n\nStart writing your notes here.`);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
   const [isCommandMenuMounted, setCommandMenuMounted] = useState(false);
-  const [commandLineIndex, setCommandLineIndex] = useState<number | null>(null);
+  const [commandPosition, setCommandPosition] = useState({ top: 0, left: 0 });
   const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setContent(`This is the content for ${file.name}.`);
+    setContent(`# ${file.name}\n\nStart writing your notes here.`);
     setShowCommandMenu(false);
-    setCommandLineIndex(null);
   }, [file]);
 
   useEffect(() => {
     if (showCommandMenu) {
       setCommandMenuMounted(true);
     } else {
-      const timer = setTimeout(() => {
-        setCommandMenuMounted(false);
-      }, 200);
+      const timer = setTimeout(() => setCommandMenuMounted(false), 200);
       return () => clearTimeout(timer);
     }
   }, [showCommandMenu]);
 
-  const getCaretLineIndex = (): number | null => {
-    const sel = window.getSelection();
-    if (!sel || !editorRef.current) return null;
+  const applyCommand = (command: Command) => {
+    if (!editorRef.current) return;
+    const { selectionStart, selectionEnd, value } = editorRef.current;
 
-    let node: Node | null = sel.anchorNode;
-    while (node && node.parentElement !== editorRef.current) {
-      node = node.parentNode;
+    const lineStartIndex = value.lastIndexOf('\n', selectionStart - 1) + 1;
+    let textToInsert = '';
+
+    switch (command.id) {
+      case 'heading-1': textToInsert = '# '; break;
+      case 'heading-2': textToInsert = '## '; break;
+      case 'heading-3': textToInsert = '### '; break;
+      case 'bullet': textToInsert = '- '; break;
+      case 'toggle': textToInsert = '<details>\n  <summary>Toggle Title</summary>\n  \n</details>'; break;
+      case 'line': textToInsert = '\n---\n'; break;
+      case 'reference': textToInsert = '[Link Text](https://example.com)'; break;
     }
-    if (!node) return null;
 
-    return Array.from(editorRef.current.children).indexOf(node as Element);
-  };
-
-  const applyCommand = useCallback((command: Command) => {
-    const lineIndex = commandLineIndex ?? getCaretLineIndex();
-    if (lineIndex === null || !editorRef.current) return;
-
-    const lineDiv = editorRef.current.children[lineIndex] as HTMLDivElement;
-    lineDiv.className = `editor-line ${getLineClass(command.markdown + ' ')}`;
-    // Replace the entire line content, including the trigger `/`
-    lineDiv.innerText = ''; 
-
+    const newContent = value.substring(0, lineStartIndex) + textToInsert + value.substring(lineStartIndex);
+    setContent(newContent);
     setShowCommandMenu(false);
 
-    // Move caret to end and focus the line
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(lineDiv);
-    range.collapse(false);
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    lineDiv.focus();
-  }, [commandLineIndex]);
+    setTimeout(() => editorRef.current?.focus(), 0);
+  };
 
-  const handleInput = () => {
-    if (!editorRef.current) return;
-
-    const newContent = Array.from(editorRef.current.children)
-      .map((c) => (c as HTMLDivElement).innerText)
-      .join('\n');
-    setContent(newContent);
-
-    const lineIndex = getCaretLineIndex();
-    if (lineIndex === null) {
-      setShowCommandMenu(false);
-      return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showCommandMenu) {
+      if (['ArrowUp', 'ArrowDown', 'Enter', 'Escape'].includes(e.key)) {
+        e.preventDefault();
+        if (e.key === 'ArrowUp') setSelectedCommandIndex(p => (p > 0 ? p - 1 : COMMANDS.length - 1));
+        if (e.key === 'ArrowDown') setSelectedCommandIndex(p => (p < COMMANDS.length - 1 ? p + 1 : 0));
+        if (e.key === 'Enter') applyCommand(COMMANDS[selectedCommandIndex]);
+        if (e.key === 'Escape') setShowCommandMenu(false);
+        return;
+      }
     }
+  };
 
-    const lineText = (editorRef.current.children[lineIndex] as HTMLDivElement).innerText;
-    // Show menu if line contains '/' - can be expanded for filtering
-    if (lineText.includes('/')) {
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const { value, selectionStart } = e.target;
+    setContent(value);
+
+    const char = value[selectionStart - 1];
+    if (char === '/') {
+      const { top, left } = editorRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
+      // This is a simplified position. A real implementation would need a library to get caret coords.
+      setCommandPosition({ top: top + 30, left: left + 15 });
       setShowCommandMenu(true);
-      setCommandLineIndex(lineIndex);
       setSelectedCommandIndex(0);
     } else {
       setShowCommandMenu(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (showCommandMenu) {
-      // These keys are for navigation only and should not affect the editor
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter' || e.key === 'Escape') {
-        e.preventDefault();
-      }
-
-      if (e.key === 'ArrowUp') {
-        setSelectedCommandIndex((prev) => (prev === 0 ? COMMANDS.length - 1 : prev - 1));
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        setSelectedCommandIndex((prev) => (prev === COMMANDS.length - 1 ? 0 : prev + 1));
-        return;
-      }
-      if (e.key === 'Enter') {
-        applyCommand(COMMANDS[selectedCommandIndex]);
-        return;
-      }
-      if (e.key === 'Escape') {
-        setShowCommandMenu(false);
-        return;
-      }
-      // All other keys will be handled by the editor by default
-    }
-    
-    // Default behavior for 'Enter' on headings (only if menu is closed)
-    if (e.key === 'Enter') {
-      const sel = window.getSelection();
-      if (!sel || !editorRef.current) return;
-      const lineDiv = sel.anchorNode?.parentElement as HTMLDivElement;
-      if (!lineDiv) return;
-
-      if (lineDiv.classList.contains('h1') || lineDiv.classList.contains('h2') || lineDiv.classList.contains('h3')) {
-        setTimeout(() => {
-          const nextLine = lineDiv.nextElementSibling as HTMLDivElement;
-          if (nextLine) {
-            nextLine.className = 'editor-line p';
-          }
-        }, 0);
-      }
-    }
-  };
-
-  const getCaretYPosition = (container: HTMLElement | null): number => {
-    if (!container) return 0;
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return 0;
-
-    const range = sel.getRangeAt(0).cloneRange();
-    range.collapse(true);
-
-    const tempSpan = document.createElement('span');
-    range.insertNode(tempSpan);
-
-    const rect = tempSpan.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const y = rect.top - containerRect.top + container.scrollTop;
-
-    tempSpan.parentNode?.removeChild(tempSpan);
-
-    return y;
-  };
-
   return (
     <div className="editor-container">
       <div className="editor-header">Editing: {file.name}</div>
-      <div className="editor-content">
-        {isNoteFile ? (
-          <div className="note-editor-grid" style={{ position: 'relative' }}>
-            <div
-              className="editor-display"
-              ref={editorRef}
-              contentEditable
-              spellCheck={false}
-              onInput={handleInput}
-              onKeyDown={handleKeyDown}
-              suppressContentEditableWarning
-            ></div>
+      <div className="editor-content-split">
+        <textarea
+          ref={editorRef}
+          value={content}
+          onKeyDown={handleKeyDown}
+          onChange={handleInput}
+          className="editor-textarea"
+          spellCheck={false}
+        />
+        <div className="editor-preview">
+          <ReactMarkdown rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>
+        </div>
 
-            {isCommandMenuMounted && commandLineIndex !== null && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: getCaretYPosition(editorRef.current),
-                  left: 0,
-                  zIndex: 100,
-                }}
-              >
-                <CommandDropdown 
-                  commands={COMMANDS} 
-                  onSelect={applyCommand}
-                  isVisible={showCommandMenu}
-                  selectedIndex={selectedCommandIndex}
-                />
-              </div>
-            )}
+        {isCommandMenuMounted && (
+          <div style={{ position: 'absolute', ...commandPosition, zIndex: 100 }}>
+            <CommandDropdown
+              commands={COMMANDS}
+              onSelect={applyCommand}
+              isVisible={showCommandMenu}
+              selectedIndex={selectedCommandIndex}
+            />
           </div>
-        ) : (
-          <pre>
-            <code>{`// Code editor for ${file.name}\n// Syntax highlighting coming soon!`}</code>
-          </pre>
         )}
       </div>
     </div>

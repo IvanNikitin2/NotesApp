@@ -12,72 +12,62 @@
   color: var(--color-text-secondary);
   font-family: var(--font-mono);
   font-size: 0.9em;
+  flex-shrink: 0;
 }
 
-.editor-content {
+.editor-content-split {
   flex-grow: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  overflow: hidden;
   position: relative;
 }
 
-.note-editor-grid {
-  display: grid;
+.editor-textarea,
+.editor-preview {
   height: 100%;
-  width: 100%;
-}
-
-.editor-display {
-  grid-area: 1 / 1;
+  overflow-y: auto;
   font-family: var(--font-mono);
   font-size: 15px;
   line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-  border: none;
+}
+
+.editor-textarea {
+  resize: none;
   background: transparent;
-  overflow-y: auto;
+  border: none;
   outline: none;
+  color: var(--color-text-primary);
+  padding: 0;
 }
 
-/* Editor lines */
-.editor-line {
-  position: relative;
-  min-height: 1.6em;
-}
-.inline-placeholder {
-  color: var(--color-text-secondary);
-  font-style: italic;
-  pointer-events: none;
+.editor-preview {
+  padding: 0 10px;
+  border-left: 1px solid var(--color-border);
 }
 
-.editor-line.p {
-  font-size: 15px;
-  font-weight: normal;
-  line-height: 1.6;
-  margin-bottom: 0.3em;
+/* Styles for rendered markdown content in the preview pane */
+.editor-preview h1,
+.editor-preview h2,
+.editor-preview h3 {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.3em;
+  margin-top: 24px;
+  margin-bottom: 16px;
 }
 
-
-/* Headings */
-.editor-line.h1 {
-  font-size: 2em;
-  font-weight: 600;
-  line-height: 1.4;
-  margin-bottom: 0.5em;
+.editor-preview h1 { font-size: 2em; }
+.editor-preview h2 { font-size: 1.5em; }
+.editor-preview h3 { font-size: 1.2em; }
+.editor-preview a { color: var(--color-text-accent); text-decoration: none; }
+.editor-preview a:hover { text-decoration: underline; }
+.editor-preview hr { border: none; border-top: 1px solid var(--color-border); margin: 2em 0; }
+.editor-preview details {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 1em;
 }
-
-.editor-line.h2 {
-  font-size: 1.5em;
-  font-weight: 600;
-  line-height: 1.4;
-  margin-bottom: 0.4em;
-}
-
-.editor-line.h3 {
-  font-size: 1.2em;
-  font-weight: 600;
-  line-height: 1.4;
-  margin-bottom: 0.3em;
-}
+.editor-preview summary { cursor: pointer; font-weight: 500; }
