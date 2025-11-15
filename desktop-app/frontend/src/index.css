@@ -1,0 +1,29 @@
+/* Define CSS variables for a modern color palette */
+:root {
+  --color-bg-deep: #0d1117;       /* Deepest background */
+  --color-bg: #161b22;            /* Primary background (sidebar, widgets) */
+  --color-bg-hover: #1f242c;       /* Hover state for items */
+  --color-border: #30363d;        /* Borders and dividers */
+  
+  --color-text-primary: #e6edf3;    /* Main text, headings */
+  --color-text-secondary: #8d96a0; /* Secondary text, placeholders */
+  --color-text-accent: #58a6ff;   /* Accent color for links, highlights */
+
+  --color-button-primary-bg: #238636;
+  --color-button-primary-hover-bg: #2ea043;
+  
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Menlo', 'monospace';
+  
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.15), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-deep);
+  color: var(--color-text-primary);
+  overflow: hidden;
+}
