@@ -5,7 +5,6 @@ import { FileNode } from './Sidebar';
 import { Command, COMMANDS } from '../lib/commands';
 import CommandDropdown from './CommandDropdown';
 import './Editor.css';
-import './EditorCommands.css';
 
 const Editor: React.FC<{ file: FileNode }> = ({ file }) => {
   const [content, setContent] = useState(`# ${file.name}\n\nStart writing your notes here.`);
@@ -31,7 +30,7 @@ const Editor: React.FC<{ file: FileNode }> = ({ file }) => {
 
   const applyCommand = (command: Command) => {
     if (!editorRef.current) return;
-    const { selectionStart, selectionEnd, value } = editorRef.current;
+    const { selectionStart, value } = editorRef.current;
 
     const lineStartIndex = value.lastIndexOf('\n', selectionStart - 1) + 1;
     let textToInsert = '';
@@ -66,15 +65,65 @@ const Editor: React.FC<{ file: FileNode }> = ({ file }) => {
     }
   };
 
+  const getCaretCoordinates = (textarea: HTMLTextAreaElement, position: number) => {
+    // Create a mirror div to measure text position
+    const div = document.createElement('div');
+    const style = window.getComputedStyle(textarea);
+    
+    // Copy relevant styles
+    const properties = [
+      'fontFamily', 'fontSize', 'fontWeight', 'letterSpacing', 'lineHeight',
+      'padding', 'border', 'width', 'whiteSpace', 'wordWrap'
+    ];
+    
+    properties.forEach(prop => {
+      div.style[prop as any] = style[prop as any];
+    });
+    
+    div.style.position = 'absolute';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+    div.style.overflow = 'hidden';
+    
+    document.body.appendChild(div);
+    
+    // Add text up to cursor position
+    const textBeforeCursor = textarea.value.substring(0, position);
+    div.textContent = textBeforeCursor;
+    
+    // Create a span for the caret
+    const span = document.createElement('span');
+    span.textContent = '|';
+    div.appendChild(span);
+    
+    // Get coordinates
+    const textareaRect = textarea.getBoundingClientRect();
+    const spanRect = span.getBoundingClientRect();
+    
+    const coordinates = {
+      top: spanRect.top - textareaRect.top + textarea.scrollTop,
+      left: spanRect.left - textareaRect.left + textarea.scrollLeft
+    };
+    
+    document.body.removeChild(div);
+    return coordinates;
+  };
+
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { value, selectionStart } = e.target;
     setContent(value);
 
     const char = value[selectionStart - 1];
     if (char === '/') {
-      const { top, left } = editorRef.current?.getBoundingClientRect() || { top: 0, left: 0 };
-      // This is a simplified position. A real implementation would need a library to get caret coords.
-      setCommandPosition({ top: top + 30, left: left + 15 });
+      if (editorRef.current) {
+        const coords = getCaretCoordinates(editorRef.current, selectionStart);
+        const rect = editorRef.current.getBoundingClientRect();
+        setCommandPosition({ 
+          top: rect.top + coords.top + 20,  // Add line height offset
+          left: rect.left + coords.left
+        });
+      }
       setShowCommandMenu(true);
       setSelectedCommandIndex(0);
     } else {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Sidebar, { FileNode } from './components/Sidebar';
 import WelcomeScreen from './components/WelcomeScreen';
 import Editor from './components/Editor';
